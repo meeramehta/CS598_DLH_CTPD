@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT_PATH = Path(__file__).parent.parent.parent
-DATA_PATH = Path("/disk1/fywang/EHR_dataset")
+DATA_PATH = Path("/home/ec2-user/CS598_DLH_CTPD/src/cmehr/preprocess/mimic3/data")
 
 # path for mimic iii dataset
 # only used for preprocessing benchmark dataset

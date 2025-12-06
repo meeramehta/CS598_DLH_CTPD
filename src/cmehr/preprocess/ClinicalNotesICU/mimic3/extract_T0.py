@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 
-mimic_iii_benchmark_path = "/disk1/*/EHR_dataset/mimiciii_benchmark"
+mimic_iii_benchmark_path = "/home/ec2-user/CS598_DLH_CTPD/src/cmehr/preprocess/mimic3/data/root"
 split = "test"
 test_starttime_path = os.path.join(mimic_iii_benchmark_path, split, f"{split}_starttime.pkl")
 episodeToStartTimeMapping = {}
