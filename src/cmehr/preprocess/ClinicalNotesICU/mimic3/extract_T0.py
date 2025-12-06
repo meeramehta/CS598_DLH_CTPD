@@ -4,8 +4,8 @@ import numpy as np
 import pickle
 
 mimic_iii_benchmark_path = "/home/ec2-user/CS598_DLH_CTPD/src/cmehr/preprocess/mimic3/data/root"
-split = "test"
-test_starttime_path = os.path.join(mimic_iii_benchmark_path, split, f"{split}_starttime.pkl")
+split = "train"
+test_starttime_path = os.path.join(mimic_iii_benchmark_path, "train_text_fixed", f"{split}_starttime.pkl")
 episodeToStartTimeMapping = {}
 
 
@@ -21,6 +21,8 @@ path = os.path.join(mimic_iii_benchmark_path, split)
 for findex, folder in enumerate(os.listdir(path)):
     # events_path = os.path.join(path, folder, 'events.csv')
     # events = pd.read_csv(events_path)
+    if not folder.isdigit():
+        continue
 
     stays_path = os.path.join(path, folder, 'stays.csv')
     stays_df = pd.read_csv(stays_path)
