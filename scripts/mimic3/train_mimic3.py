@@ -32,6 +32,7 @@ parser.add_argument("--update_counts", type=int, default=3)
 parser.add_argument("--max_epochs", type=int, default=50)
 parser.add_argument("--update_encoder_epochs", type=int, default=2)
 parser.add_argument("--devices", type=int, default=1)
+parser.add_argument("--accelerator", type=str, default="gpu", choices=["gpu", "cpu"])
 parser.add_argument("--max_length", type=int, default=1024)
 parser.add_argument("--accumulate_grad_batches", type=int, default=1)
 parser.add_argument("--first_nrows", type=int, default=-1)
@@ -196,18 +197,19 @@ def cli_main():
                 EarlyStopping(monitor="val_auroc", patience=5,
                               mode="max", verbose=True)
             ]
-        trainer = Trainer(
-            devices=args.devices,
-            accelerator="gpu",
+        trainer_kwargs = dict(
+            devices=args.devices if args.accelerator == "gpu" else 1,
+            accelerator=args.accelerator,
             max_epochs=args.max_epochs,
-            precision="16-mixed",
             accumulate_grad_batches=args.accumulate_grad_batches,
-            # deterministic=False,
             callbacks=callbacks,
             logger=logger,
-            strategy="ddp_find_unused_parameters_true",
             gradient_clip_val=0.5,
         )
+        if args.accelerator == "gpu":
+            trainer_kwargs["precision"] = "16-mixed"
+            trainer_kwargs["strategy"] = "ddp_find_unused_parameters_true"
+        trainer = Trainer(**trainer_kwargs)
 
         if not args.test_only:
             trainer.fit(model, dm)
