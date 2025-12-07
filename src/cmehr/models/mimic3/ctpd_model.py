@@ -92,7 +92,7 @@ class CTPDModule(MIMIC3LightningModule):
                  orig_d_ts: int = 17,
                  orig_reg_d_ts: int = 34,
                  warmup_epochs: int = 20,
-                 max_epochs: int = 100,
+                 max_epochs: int = 10,
                  ts_learning_rate: float = 4e-5,
                  embed_time: int = 64,
                  embed_dim: int = 128,
@@ -109,10 +109,11 @@ class CTPDModule(MIMIC3LightningModule):
                  mixup_level: str = "batch",
                  dropout: float = 0.1,
                  pooling_type: str = "attention",
+                 recon_loss_type: str = "mse",
                  *args,
                  **kwargs
                  ):
-        # TODO: add more arguments for ablation study
+        # Ablation study: reconstruction loss type (mse, huber, l1)
         super().__init__(task=task, max_epochs=max_epochs,
                          ts_learning_rate=ts_learning_rate,
                          period_length=period_length)
@@ -133,6 +134,7 @@ class CTPDModule(MIMIC3LightningModule):
         self.use_multiscale = use_multiscale
         self.pooling_type = pooling_type
         self.dropout = dropout
+        self.recon_loss_type = recon_loss_type
 
         # define convolution within multiple layers
         self.ts_conv_1 = ConvBlock(
@@ -361,6 +363,20 @@ class CTPDModule(MIMIC3LightningModule):
 
         return F.cross_entropy(sim, labels)
 
+    def compute_recon_loss(self, pred, target):
+        """
+        Compute reconstruction loss based on the selected loss type.
+        Options: mse (default), huber, l1
+        """
+        if self.recon_loss_type == "mse":
+            return F.mse_loss(pred, target)
+        elif self.recon_loss_type == "huber":
+            return F.huber_loss(pred, target, delta=1.0)
+        elif self.recon_loss_type == "l1":
+            return F.l1_loss(pred, target)
+        else:
+            raise ValueError(f"Unknown recon_loss_type: {self.recon_loss_type}")
+
     def forward(self, x_ts, x_ts_mask, ts_tt_list,
                 input_ids, attention_mask, note_time, note_time_mask,
                 reg_ts, labels=None):
@@ -460,11 +476,11 @@ class CTPDModule(MIMIC3LightningModule):
             mask = nn.Transformer.generate_square_subsequent_mask(self.tt_max - 1)
             pred_ts_emb = self.ts_decoder(tgt=ts_tgt_embs[:, :-1], memory=concat_ts_slot, tgt_mask=mask, tgt_is_causal=True)
             pred_ts = self.ts_proj(pred_ts_emb)
-            ts_recon_loss = F.mse_loss(pred_ts, reg_ts[:, 1:])
+            ts_recon_loss = self.compute_recon_loss(pred_ts, reg_ts[:, 1:])
 
             text_tgt_embs = rearrange(proj_x_text_irg, "tt b d -> b tt d")
             pred_text_emb = self.text_decoder(tgt=text_tgt_embs[:, :-1], memory=concat_text_slot, tgt_mask=mask, tgt_is_causal=True)
-            text_recon_loss = F.mse_loss(pred_text_emb, text_tgt_embs[:, 1:])
+            text_recon_loss = self.compute_recon_loss(pred_text_emb, text_tgt_embs[:, 1:])
         else:
             concat_ts_feat = torch.cat(ts_feat_list, dim=1)
             concat_text_feat = torch.cat(text_feat_list, dim=1)
