@@ -8,6 +8,9 @@ import re
 import json
 
 from nltk import sent_tokenize, word_tokenize
+import nltk
+nltk.download('punkt')
+
 
 
 SECTION_TITLES = re.compile(
@@ -111,7 +114,7 @@ def preprocess_mimic(text):
 
 
 # df = pd.read_csv('/mnt/disks/mimic3/data/data/NOTEEVENTS.csv')
-df = pd.read_csv("/disk1/*/EHR_dataset/mimiciii/NOTEEVENTS.csv")
+df = pd.read_csv("/data/mimiciii/physionet.org/files/mimiciii/1.4/NOTEEVENTS.csv")
 df.CHARTDATE = pd.to_datetime(df.CHARTDATE)
 df.CHARTTIME = pd.to_datetime(df.CHARTTIME)
 df.STORETIME = pd.to_datetime(df.STORETIME)
@@ -154,11 +157,12 @@ min        1.000000      1.000000      1.000000
 max     1214.000000   1214.000000   1214.000000
 '''
 
-dataset_path = "/disk1/*/EHR_dataset/mimiciii_benchmark/train"
+dataset_path = "/home/ec2-user/CS598_DLH_CTPD/src/cmehr/preprocess/mimic3/data/root/train"
 all_files = os.listdir(dataset_path)
 all_folders = list(filter(lambda x: x.isdigit(), all_files))
 
-output_folder = "/disk1/*/EHR_dataset/mimiciii_benchmark/train_text_fixed"
+output_folder = "/home/ec2-user/CS598_DLH_CTPD/src/cmehr/preprocess/mimic3/data/root/train_text_fixed"
+os.makedirs(output_folder, exist_ok=True)
 
 suceed = 0
 failed = 0
@@ -172,7 +176,7 @@ hadm_id2index = {}
 for folder in all_folders:
     try:
         patient_id = int(folder)
-        sliced = df2[df2.SUBJECT_ID == patient_id]
+        sliced = df2[df2.SUBJECT_ID == patient_id].copy()
         if sliced.shape[0] == 0:
             print("No notes for PATIENT_ID : {}".format(patient_id))
             failed += 1
@@ -209,7 +213,6 @@ for folder in all_folders:
 print("Sucessfully Completed: %d/%d" % (suceed, len(all_folders)))
 print("No Notes for Patients: %d/%d" % (failed, len(all_folders)))
 print("Failed with Exception: %d/%d" % (failed_exception, len(all_folders)))
-
 
 with open(os.path.join(output_folder, 'test_hadm_id2index'), 'w') as f:
     json.dump(hadm_id2index, f)

@@ -50,6 +50,9 @@ parser.add_argument("--lamb1", type=float, default=0.5)
 parser.add_argument("--lamb2", type=float, default=0)
 parser.add_argument("--lamb3", type=float, default=0)
 parser.add_argument("--num_slots", type=int, default=16)
+parser.add_argument("--recon_loss_type", type=str, default="mse",
+                    choices=["mse", "huber", "l1"],
+                    help="Reconstruction loss type: mse (default), huber, or l1")
 args = parser.parse_args()
 
 '''
